@@ -30,8 +30,9 @@ export default function Login() {
       <form onSubmit={handleSubmit}>
         {error && <p style={{ color: '#e94560' }}>{error}</p>}
         <div style={{ marginBottom: 12 }}>
-          <label>Email</label>
+          <label htmlFor="email">Email</label>
           <input
+            id="email"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -40,8 +41,9 @@ export default function Login() {
           />
         </div>
         <div style={{ marginBottom: 12 }}>
-          <label>Password</label>
+          <label htmlFor="password">Password</label>
           <input
+            id="password"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
