@@ -1,30 +1,51 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Put,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { TasksService } from './tasks.service';
-import { CreateTaskDto } from './dto/create-task.dto/create-task.dto';
-import { GetTasksQueryDto } from './dto/get-tasks-query.dto/get-tasks-query.dto';
+import { CreateTaskDto } from './dto/create-task.dto';
+import { GetTasksQueryDto } from './dto/get-tasks-query.dto';
+import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
 
+@UseGuards(JwtAuthGuard)
 @Controller('tasks')
 export class TasksController {
-    constructor(private readonly tasksService:TasksService){}
+  constructor(private readonly tasksService: TasksService) {}
 
-    @Post()
-    create(@Body() dto:CreateTaskDto){
-        return this.tasksService.create(dto.title);
-    }
+  @Post()
+  create(@Body() dto: CreateTaskDto, @CurrentUser() user: any) {
+    return this.tasksService.create(dto.title, dto.completed, user.id);
+  }
 
-     @Get()
-     findAll(@Query() query:GetTasksQueryDto){
-        return this.tasksService.findAll(query);
-     }
+  @Get()
+  findAll(@Query() query: GetTasksQueryDto, @CurrentUser() user: any) {
+    return this.tasksService.findAll(query, user.id);
+  }
 
-     @Put(':id')
-        update(@Param('id') id:string ,@Body() dto:CreateTaskDto){
-            return this.tasksService.update(id,dto.title,dto.completed);
-        }
+  @Get(':id')
+  findOne(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.tasksService.findOne(id, user.id);
+  }
 
-        @Delete(':id')
-        delete(@Param('id') id:string){
-            return this.tasksService.delete(id);
-        }
+  @Put(':id')
+  update(
+    @Param('id') id: string,
+    @Body() dto: CreateTaskDto,
+    @CurrentUser() user: any,
+  ) {
+    return this.tasksService.update(id, dto.title, dto.completed, user.id);
+  }
 
+  @Delete(':id')
+  delete(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.tasksService.delete(id, user.id);
+  }
 }

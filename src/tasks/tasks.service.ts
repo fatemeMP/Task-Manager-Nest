@@ -1,8 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Task } from './task.entity';
+import { Task } from './entities/task.entity';
 import { Repository } from 'typeorm';
-import { GetTasksQueryDto } from './dto/get-tasks-query.dto/get-tasks-query.dto';
+import { GetTasksQueryDto } from './dto/get-tasks-query.dto';
 
 @Injectable()
 export class TasksService {
@@ -11,27 +11,33 @@ export class TasksService {
         private taskRepository: Repository<Task> 
     ){}
 
-    async create(title:string ){
-        const task = this.taskRepository.create({title});
+    async create(title: string, completed: boolean | undefined, userId: number) {
+        const task = this.taskRepository.create({
+            title,
+            completed: completed ?? false,
+            user: { id: userId },
+        });
         return this.taskRepository.save(task);
     }
 
-     async findAll(query:GetTasksQueryDto){
+    async findAll(query: GetTasksQueryDto, userId: number) {
         const { status, page = '1', limit = '10' } = query;
-        const pageNumber = parseInt(page ?? 1);
-        const limitNumber = parseInt(limit ?? 10);
-      
+        const pageNumber = parseInt(page, 10) || 1;
+        const limitNumber = parseInt(limit, 10) || 10;
+
         const qb = this.taskRepository.createQueryBuilder('task');
 
-        //  FILTER
+        // SCOPE TO USER
+        qb.where('task.userId = :userId', { userId });
+
+        // FILTER BY STATUS
         if (status) {
-          qb.where('task.status = :status', { status });
+            qb.andWhere('task.status = :status', { status });
         }
 
-         //  PAGINATION
+        // PAGINATION
         qb.skip((pageNumber - 1) * limitNumber);
         qb.take(limitNumber);
-
 
         const [data, total] = await qb.getManyAndCount();
 
@@ -40,27 +46,44 @@ export class TasksService {
             total,
             page: pageNumber,
             lastPage: Math.ceil(total / limitNumber),
-          };
-     }
+        };
+    }
 
-        async update(id:string ,title:string , completed?:boolean){
-            const task = await this.taskRepository.findOneBy({id:+id});
-            if(!task){
-                throw new NotFoundException('Task not found');
-            }
-            task.title = title;
-            if(completed !== undefined){
-                task.completed = completed;
-            }
-            return this.taskRepository.save(task);
-         }
+    async findOne(id: string, userId: number) {
+        const task = await this.taskRepository.findOneBy({
+            id: +id,
+            user: { id: userId },
+        });
+        if (!task) {
+            throw new NotFoundException('Task not found');
+        }
+        return task;
+    }
 
-        async delete(id:string){
-            const task = await this.taskRepository.findOneBy({id:+id});
-            if(!task){
-                throw new NotFoundException('Task not found');
-            }
-            return { message:"delete was successfull.", status: 200 };
-         }
+    async update(id: string, title: string, completed: boolean | undefined, userId: number) {
+        const task = await this.taskRepository.findOneBy({
+            id: +id,
+            user: { id: userId },
+        });
+        if (!task) {
+            throw new NotFoundException('Task not found');
+        }
+        task.title = title;
+        if (completed !== undefined) {
+            task.completed = completed;
+        }
+        return this.taskRepository.save(task);
+    }
+
+    async delete(id: string, userId: number) {
+        const result = await this.taskRepository.delete({
+            id: +id,
+            user: { id: userId },
+        });
+        if (result.affected === 0) {
+            throw new NotFoundException('Task not found');
+        }
+        return { message: 'Task deleted successfully.' };
+    }
 
 }
