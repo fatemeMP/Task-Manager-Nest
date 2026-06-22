@@ -9,11 +9,11 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { TasksService } from './tasks.service';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { GetTasksQueryDto } from './dto/get-tasks-query.dto';
-import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
-import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { TasksService } from './tasks.service';
 
 @UseGuards(JwtAuthGuard)
 @Controller('tasks')
